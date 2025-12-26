@@ -42,6 +42,7 @@ const server = http_1.default.createServer(async (req, res) => {
     res.statusCode = 404;
     res.end(JSON.stringify({ message: "Route not found" }));
 });
-server.listen(4000, () => {
-    console.log("Server running at http://localhost:4000");
+const PORT = process.env.PORT || 4000;
+server.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
 });

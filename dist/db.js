@@ -4,38 +4,32 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.db = void 0;
-const sqlite3_1 = __importDefault(require("sqlite3"));
+const better_sqlite3_1 = __importDefault(require("better-sqlite3"));
 const path_1 = __importDefault(require("path"));
 const dbPath = path_1.default.join(__dirname, "..", "dua.db");
-exports.db = new sqlite3_1.default.Database(dbPath, (err) => {
-    if (err) {
-        console.error("Connection failed", err);
-    }
-    else {
-        console.log("Connected");
-        initializeDatabase();
-    }
-});
+// Open the database (it will create the file if it doesn't exist)
+exports.db = new better_sqlite3_1.default(dbPath);
+// Initialize tables
 function initializeDatabase() {
-    exports.db.serialize(() => {
+    try {
         // Categories
-        exports.db.run(`
+        exports.db.prepare(`
       CREATE TABLE IF NOT EXISTS categories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL
       )
-    `);
+    `).run();
         // Subcategories
-        exports.db.run(`
+        exports.db.prepare(`
       CREATE TABLE IF NOT EXISTS subcategories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         category_id INTEGER,
         name TEXT NOT NULL,
         FOREIGN KEY (category_id) REFERENCES categories(id)
       )
-    `);
+    `).run();
         // Duas
-        exports.db.run(`
+        exports.db.prepare(`
       CREATE TABLE IF NOT EXISTS duas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         subcategory_id INTEGER,
@@ -47,7 +41,13 @@ function initializeDatabase() {
         reference TEXT,
         FOREIGN KEY (subcategory_id) REFERENCES subcategories(id)
       )
-    `);
+    `).run();
         console.log("Tables created");
-    });
+    }
+    catch (err) {
+        console.error("Database initialization failed:", err);
+    }
 }
+// Call the function to create tables
+initializeDatabase();
+console.log("Connected to SQLite database using better-sqlite3");
