@@ -3,16 +3,24 @@ import { IncomingMessage, ServerResponse } from "http";
 import { URL } from "url";
 
 export function getDuas(req: IncomingMessage, res: ServerResponse) {
-  const url = new URL(req.url!, "http://localhost");
-  const subcategoryId = url.searchParams.get("subcategoryId");
+  try {
+    const url = new URL(req.url!, "http://localhost");
+    const subcategoryId = url.searchParams.get("subcategoryId");
 
-  db.all("SELECT * FROM duas", [], (err, rows) => {
-    if (err) {
-      res.statusCode = 500;
-      return res.end(JSON.stringify({ error: err.message }));
+    let rows;
+    if (subcategoryId) {
+      const stmt = db.prepare("SELECT * FROM duas WHERE subcategory_id = ?");
+      rows = stmt.all(subcategoryId);
+    } else {
+      const stmt = db.prepare("SELECT * FROM duas");
+      rows = stmt.all();
     }
+
     res.end(JSON.stringify(rows));
-  });
+  } catch (err) {
+    res.statusCode = 500;
+    res.end(JSON.stringify({ error: (err as Error).message }));
+  }
 }
 
 export function createDua(req: IncomingMessage, res: ServerResponse) {
@@ -20,20 +28,8 @@ export function createDua(req: IncomingMessage, res: ServerResponse) {
 
   req.on("data", (chunk) => (body += chunk));
   req.on("end", () => {
-    const {
-      subcategory_id,
-      title,
-      about,
-      arabic,
-      arabic_translation,
-      translation,
-      reference,
-    } = JSON.parse(body);
-
-    db.run(
-      `INSERT INTO duas (subcategory_id, title,about, arabic,arabic_translation, translation,reference)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
+    try {
+      const {
         subcategory_id,
         title,
         about,
@@ -41,26 +37,38 @@ export function createDua(req: IncomingMessage, res: ServerResponse) {
         arabic_translation,
         translation,
         reference,
-      ],
-      function (err) {
-        if (err) {
-          res.statusCode = 500;
-          return res.end(JSON.stringify({ error: err.message }));
-        }
+      } = JSON.parse(body);
 
-        res.end(
-          JSON.stringify({
-            id: this.lastID,
-            subcategory_id,
-            title,
-            about,
-            arabic,
-            arabic_translation,
-            translation,
-            reference,
-          })
-        );
-      }
-    );
+      const stmt = db.prepare(
+        `INSERT INTO duas (subcategory_id, title, about, arabic, arabic_translation, translation, reference)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      );
+
+      const info = stmt.run(
+        subcategory_id,
+        title,
+        about,
+        arabic,
+        arabic_translation,
+        translation,
+        reference
+      );
+
+      res.end(
+        JSON.stringify({
+          id: info.lastInsertRowid,
+          subcategory_id,
+          title,
+          about,
+          arabic,
+          arabic_translation,
+          translation,
+          reference,
+        })
+      );
+    } catch (err) {
+      res.statusCode = 500;
+      res.end(JSON.stringify({ error: (err as Error).message }));
+    }
   });
 }

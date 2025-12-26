@@ -4,13 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "ts-node src/server.ts",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "postinstall": "npm rebuild sqlite3 --build-from-source"
   },
   "dependencies": {
-    "typescript": "^5.9.3",
+    "@types/node": "^20.11.0",
+    "better-sqlite3": "^12.5.0",
     "ts-node": "^10.9.2",
-    "sqlite3": "^5.1.7",
-    "@types/node": "^20.11.0"
+    "typescript": "^5.9.3"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13"
+  }
 }
